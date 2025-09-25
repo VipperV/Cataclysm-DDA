@@ -1,0 +1,42 @@
+[
+  {
+    "id": "dimensional_storage_ring",
+    "type": "ARMOR",
+    "name": { "str": "dimensional storage ring" },
+    "description": "A ring that contains a pocket dimension allowing it to store a large amount of items, and it is also equipped with an advanced portable nanofabricator.",
+    "weight": "50 g",
+    "volume": "5 ml",
+    "price": 5120000000,
+    "price_postapoc": 25600000,
+    "material": [ { "type": "superalloy" }, { "type": "gold" } ],
+    "use_action": [ "PORTABLE_NANOFABRICATOR" ],
+    "symbol": "[",
+    "looks_like": "opal_gold_ring",
+    "color": "yellow",
+    "sided": true,
+    "allowed_pocketnanofab_template_ids": [ "standard_template_construct", "debug_template" ],
+    "pocket_data": [
+      {
+        "pocket_type": "CONTAINER",
+        "max_contains_volume": "100000 L",
+        "max_contains_weight": "100000 kg",
+        "max_item_length": "1 km",
+        "watertight": true,
+        "airtight": true,
+        "spoil_multiplier": 0,
+        "weight_multiplier": 0,
+        "rigid": true,
+        "moves": 10
+      }
+    ],
+    "armor": [
+      {
+        "encumbrance": 0,
+        "coverage": 0,
+        "covers": [ "hand_l", "hand_r" ],
+        "specifically_covers": [ "hand_fingers_l", "hand_fingers_r" ]
+      }
+    ],
+    "flags": [ "TARDIS", "NANOFAB_REPAIR", "NO_REPAIR", "WATERPROOF", "FANCY", "NO_WEAR_EFFECT", "BELTED", "ALLOWS_TALONS" ]
+  }
+]

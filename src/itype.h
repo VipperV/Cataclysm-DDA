@@ -1318,6 +1318,9 @@ struct itype {
         // itemgroup used to generate the recipes within nanofabricator templates.
         item_group_id nanofab_template_group;
 
+        // templates allowed to be used for pocket nanofabricator recipes.
+        std::set<itype_id> allowed_pocketnanofab_template_id;
+
         // used for corpses placed by mapgen
         mtype_id source_monster = mtype_id::NULL_ID();
     private:

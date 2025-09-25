@@ -1848,6 +1848,7 @@ void Item_factory::init()
     add_iuse( "DBG_LUX_METER", &iuse::dbg_lux_meter );
     add_iuse( "CALORIES_INTAKE_TRACKER", &iuse::calories_intake_tracker );
     add_iuse( "VOLTMETER", &iuse::voltmeter );
+    add_iuse( "PORTABLE_NANOFABRICATOR", &iuse::pocket_nanofab );
 
     add_actor( std::make_unique<ammobelt_actor>() );
     add_actor( std::make_unique<consume_drug_iuse>() );
@@ -4236,6 +4237,10 @@ void Item_factory::load_basic_info( const JsonObject &jo, itype &def, const std:
                 def.magazines[ ammo ].insert( itype_id( compat.next_string() ) );
             }
         }
+    }
+
+    if( jo.has_array( "allowed_pocketnanofab_template_ids" ) ) {
+        optional( jo, false, "allowed_pocketnanofab_template_ids", def.allowed_pocketnanofab_template_id );
     }
 
     if( jo.has_string( "nanofab_template_group" ) ) {

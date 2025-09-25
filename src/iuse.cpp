@@ -304,6 +304,7 @@ static const itype_id itype_water( "water" );
 static const itype_id itype_water_clean( "water_clean" );
 static const itype_id itype_wax( "wax" );
 static const itype_id itype_weather_reader( "weather_reader" );
+static const itype_id itype_nanomaterial( "nanomaterial" );
 
 static const json_character_flag json_flag_ENHANCED_VISION( "ENHANCED_VISION" );
 static const json_character_flag json_flag_HYPEROPIC( "HYPEROPIC" );
@@ -9137,104 +9138,118 @@ std::optional<int> use_function::call( Character *p, item &it,
     return actor->use( p, it, pos );
 }
 
-//std::optional<int> iuse::pocket_nanofab(Character* you, item* it, bool, const tripoint&)
-//{
-//    if (!you) {
-//        return std::nullopt;
-//    }
-//
-//    uilist menu;
-//    menu.title = _("Choose an action:");
-//    menu.addentry(0, true, 'r', _("Repair items"));
-//    menu.addentry(1, true, 'm', _("Manufacture items"));
-//
-//    menu.query();
-//    int choice = menu.ret;
-//
-//    if (choice == 0) { // 修复功能
-//        std::vector<item_location> repairable_items = g->inv_map_splice([](const item& e) {
-//            return e.damage_level() > 0 && !e.has_flag(flag_NO_REPAIR);
-//            }, _("Select an item to repair"), 1, _("You have no items to repair."));
-//
-//        if (repairable_items.empty()) {
-//            add_msg(m_info, _("You have no items that can be repaired."));
-//            return std::nullopt;
-//        }
-//
-//        item_location selected_item = repairable_items.front();
-//        if (!selected_item) {
-//            return std::nullopt;
-//        }
-//
-//        int damage = selected_item->damage_level();
-//        float dam_mult = .05f * damage;
-//        int qty = std::max(1, static_cast<int>(dam_mult * selected_item->volume() / 250_ml));
-//
-//        requirement_data reqs = requirement_data({}, {}, { { { item_comp(itype_nanomaterial, 5 * qty) } } });
-//
-//        if (!reqs.can_make_with_inventory(you->crafting_inventory(), is_crafting_component)) {
-//            popup("%s", reqs.list_missing());
-//            return std::nullopt;
-//        }
-//
-//        // 消耗材料
-//        for (const auto& e : reqs.get_components()) {
-//            you->consume_items(e, 1, is_crafting_component);
-//        }
-//        you->invalidate_crafting_inventory();
-//
-//        // 修复物品
-//        selected_item->set_damage(0);
-//        add_msg(m_good, _("You repair the %s."), selected_item->tname());
-//        you->mod_moves(-to_moves<int>(10_seconds));
-//        return 1;
-//    }
-//    else if (choice == 1) { // 制造功能
-//        std::set<itype_id> allowed_template = it->type->allowed_template_id;
-//        std::set<std::string> templatenames;
-//        for (const itype_id& id : allowed_template) {
-//            templatenames.insert(id->nname(1));
-//        }
-//        std::string name_list = enumerate_as_string(templatenames);
-//
-//        item_location nanofab_template = g->inv_map_splice([&](const item& e) {
-//            return std::any_of(allowed_template.begin(), allowed_template.end(),
-//                [&e](const itype_id itid) {
-//                    return e.typeId() == itid;
-//                });
-//            }, _("Introduce a compatible template."), PICKUP_RANGE,
-//                _("You don't have any usable templates.\n\nCompatible templates are: ") + name_list);
-//
-//        if (!nanofab_template) {
-//            return std::nullopt;
-//        }
-//
-//        item new_item(nanofab_template->get_var("NANOFAB_ITEM_ID"), calendar::turn);
-//        int qty = std::max(1, new_item.volume() / 250_ml);
-//        requirement_data reqs = *nanofab_template->type->template_requirements * qty;
-//
-//        if (!reqs.can_make_with_inventory(you->crafting_inventory(), is_crafting_component)) {
-//            popup("%s", reqs.list_missing());
-//            return std::nullopt;
-//        }
-//
-//        // 消耗材料
-//        for (const auto& e : reqs.get_components()) {
-//            you->consume_items(e, 1, is_crafting_component);
-//        }
-//        you->invalidate_crafting_inventory();
-//
-//        if (new_item.is_armor() && new_item.has_flag(flag_VARSIZE)) {
-//            new_item.set_flag(flag_FIT);
-//        }
-//
-//        you->i_add_or_drop(new_item);
-//        add_msg(m_good, _("You manufacture a %s."), new_item.tname());
-//
-//        // 如果模板是一次性使用的，销毁模板
-//        if (nanofab_template->has_flag(flag_NANOFAB_TEMPLATE_SINGLE_USE)) {
-//            nanofab_template.remove_item();
-//        }
-//        return 1;
-//    }
-//}
+std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoint & )
+{
+    //    if (!you) {
+    //        return std::nullopt;
+    //    }
+
+    uilist menu;
+    menu.title = _( "Choose an action:" );
+    menu.addentry( 0, true, 'r', _( "Repair items" ) );
+    menu.addentry( 1, true, 'm', _( "Manufacture items" ) );
+
+    menu.query();
+    int choice = menu.ret;
+
+    item_location nanofab_template;
+    std::set<itype_id> allowed_template = it->type->allowed_pocketnanofab_template_id;
+    item new_item;
+    requirement_data reqs;
+
+    if( choice == 0 ) { // 修复功能
+
+        item_location loc = g->inv_map_splice( []( const item & e ) {
+            return e.damage_level() > 0 && !e.has_flag( flag_NO_REPAIR ) && e.has_flag( flag_NANOFAB_REPAIR );
+        }
+        , _( "Select an item to repair" ), 1, _( "You have no items to repair." ) );
+
+        if( !loc ) {
+            add_msg( m_info, _( "Never mind." ) );
+            return std::nullopt;
+        }
+
+        new_item = item( loc->typeId(), calendar::turn );
+
+        if( !loc->empty() ) {
+            popup( _( "Item %s detected, contents of item will be destroyed by fabricator. Please empty the item and return." ),
+                   new_item.display_name() );
+            return std::nullopt;
+        }
+
+        if( !query_yn( _( "Fabricator-compliant item %s detected, repair integrity damage?" ),
+                       new_item.display_name() ) ) {
+            return std::nullopt;
+        }
+
+        int damage = loc->damage_level();
+        float dam_mult = .05f * damage;
+        int qty = std::max( 1, static_cast<int>( dam_mult * loc->volume() / 250_ml ) );
+
+        std::vector<std::vector<item_comp>> requirement_comp_vector;
+        std::vector<std::vector<quality_requirement>> quality_comp_vector;
+        std::vector<std::vector<tool_comp>> tool_comp_vector;
+        std::vector<item_comp> nano_req = { item_comp( itype_nanomaterial, 5 * qty ) };
+        requirement_comp_vector.push_back( nano_req );
+        std::vector<item_comp> item_req = { item_comp( loc->typeId(), 1 ) };
+        requirement_comp_vector.push_back( item_req );
+        reqs = requirement_data( tool_comp_vector, quality_comp_vector, requirement_comp_vector );
+
+    } else if( choice == 1 ) {
+        //Create a list of the names of all acceptable templates.
+        std::set<std::string> templatenames;
+        for( const itype_id &id : allowed_template ) {
+            templatenames.insert( id->nname( 1 ) );
+        }
+        std::string name_list = enumerate_as_string( templatenames );
+
+        //Template selection
+        nanofab_template = g->inv_map_splice( [&]( const item & e ) {
+            return  std::any_of( allowed_template.begin(), allowed_template.end(),
+            [&e]( const itype_id itid ) {
+                return e.typeId() == itid;
+            } );
+        }, _( "Introduce a compatible template." ), PICKUP_RANGE,
+        _( "You don't have any usable templates.\n\nCompatible templates are: " ) + name_list );
+
+        if( !nanofab_template ) {
+            return std::nullopt;
+        }
+
+        new_item = item( nanofab_template->get_var( "NANOFAB_ITEM_ID" ), calendar::turn );
+        int qty = std::max( 1, new_item.volume() / 250_ml );
+        reqs = *nanofab_template->type->template_requirements * qty;
+    }
+
+    // either way the new item should have the nanofabricator flag
+    if( !new_item.has_flag( flag_NANOFAB_REPAIR ) ) {
+        new_item.set_flag( flag_NANOFAB_REPAIR );
+    }
+
+    if( !reqs.can_make_with_inventory( you->crafting_inventory(), is_crafting_component ) ) {
+        popup( "%s", reqs.list_missing() );
+        return std::nullopt;
+    }
+
+    // Consume materials
+    for( const auto &e : reqs.get_components() ) {
+        you->consume_items( e, 1, is_crafting_component );
+    }
+    for( const auto &e : reqs.get_tools() ) {
+        you->consume_tools( e );
+    }
+    you->invalidate_crafting_inventory();
+
+    if( new_item.is_armor() && new_item.has_flag( flag_VARSIZE ) ) {
+        new_item.set_flag( flag_FIT );
+    }
+
+    you->i_add_or_drop( new_item );
+
+    // if this template is single use
+    // also check if the template exists at all
+    if( nanofab_template && nanofab_template->has_flag( flag_NANOFAB_TEMPLATE_SINGLE_USE ) ) {
+        nanofab_template.remove_item();
+    }
+    return 1;
+}

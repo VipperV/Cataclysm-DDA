@@ -1080,6 +1080,11 @@
   },
   {
     "type": "item_action",
+    "id": "PORTABLE_NANOFABRICATOR",
+    "name": { "str": "Craft items with nanomaterials" }
+  },
+  {
+    "type": "item_action",
     "id": "play_instrument",
     "name": { "str": "Play instrument" }
   },
