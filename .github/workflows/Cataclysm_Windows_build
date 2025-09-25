@@ -17,7 +17,7 @@ on:
     - 'utilities/**'
   pull_request:
     branches:
-    - master
+    - 0.H-D-Modification
     paths-ignore:
     - 'android/**'
     - 'build-data/osx/**'
