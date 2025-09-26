@@ -1,0 +1,60 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: None\n"
+"POT-Creation-Date: 2025-09-25 22:32+0800\n"
+"PO-Revision-Date: 2025-09-25 22:34+0800\n"
+"Last-Translator:  <thefirstrobot@hotmail.com>\n"
+"Language-Team: Chinese (simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/iuse.cpp:9148
+msgid "Choose an action:"
+msgstr "选择一个操作："
+
+#: src/iuse.cpp:9149
+msgid "Repair items"
+msgstr "修复物品"
+
+#: src/iuse.cpp:9150
+msgid "Manufacture items"
+msgstr "制造物品"
+
+#: src/iuse.cpp:9165
+msgid "Select an item to repair"
+msgstr "选择要修复的物品"
+
+#: src/iuse.cpp:9165
+msgid "You have no items to repair."
+msgstr "你没有可修复的物品。"
+
+#: src/iuse.cpp:9175
+#, c-format
+msgid ""
+"Item %s detected, contents of item will be destroyed by fabricator. Please "
+"empty the item and return."
+msgstr "检测到物品 %s，物品内容将被制造机销毁。请清空物品后再操作。"
+
+#: src/iuse.cpp:9180
+#, c-format
+msgid "Fabricator-compliant item %s detected, repair integrity damage?"
+msgstr "检测到符合制造机规范的物品 %s，要修复完整性损伤吗？"
+
+#: src/iuse.cpp:9212
+msgid "Introduce a compatible template."
+msgstr "放入一个兼容的模板。"
+
+#: src/iuse.cpp:9213
+msgid ""
+"You don't have any usable templates.\n"
+"\n"
+"Compatible templates are: "
+msgstr "你没有可用的模板。\n\n兼容的模板有："
+
+#. ~ Item action name of "PORTABLE_NANOFABRICATOR"
+#: data/json/item_actions.json
+msgid "Craft items with nanomaterials"
+msgstr "制造物品"
