@@ -9154,8 +9154,9 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
 
     item_location nanofab_template;
     std::set<itype_id> allowed_template = it->type->allowed_pocketnanofab_template_id;
-    item new_item;
+    itype_id content_id;
     requirement_data reqs;
+    int craft_qty = 1;
 
     if( choice == 0 ) { // 修复功能
 
@@ -9169,16 +9170,16 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
             return std::nullopt;
         }
 
-        new_item = item( loc->typeId(), calendar::turn );
+        content_id = loc->typeId();
 
         if( !loc->empty() ) {
             popup( _( "Item %s detected, contents of item will be destroyed by fabricator. Please empty the item and return." ),
-                   new_item.display_name() );
+                   loc->display_name() );
             return std::nullopt;
         }
 
         if( !query_yn( _( "Fabricator-compliant item %s detected, repair integrity damage?" ),
-                       new_item.display_name() ) ) {
+                       loc->display_name() ) ) {
             return std::nullopt;
         }
 
@@ -9215,23 +9216,65 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
         if( !nanofab_template ) {
             return std::nullopt;
         }
+        content_id = itype_id( nanofab_template->get_var( "NANOFAB_ITEM_ID" ) );
 
-        new_item = item( nanofab_template->get_var( "NANOFAB_ITEM_ID" ), calendar::turn );
-        int qty = std::max( 1, new_item.volume() / 250_ml );
-        reqs = *nanofab_template->type->template_requirements * qty;
+        if( !content_id.is_null() && item::find_type( content_id ) -> nanofab_template_group ) {
+            std::vector<std::pair<itype_id, std::string>> options;
+            std::set<const itype *> template_recipes = item::find_type( content_id ) -> nanofab_template_group->every_item();
+            for( const itype *recipe : template_recipes ) {
+                itype_id recipe_id = recipe->get_id();
+                if( recipe_id ) {
+                    options.emplace_back( recipe_id, item::nname( recipe_id ) );
+                }
+            }
+            if( options.empty() ) {
+                add_msg( m_info, _( "No valid recipes for nanofabricator." ) );
+                return std::nullopt;
+            }
+
+            uilist sub_menu;
+            sub_menu.title = _( "Select the template to manufacture:" );
+            for( size_t i = 0; i < options.size(); ++i ) {
+                sub_menu.addentry( i, true, -1, options[i].second );
+            }
+            sub_menu.query();
+
+            if( sub_menu.ret < 0 || static_cast<size_t>( sub_menu.ret ) >= options.size() ) {
+                return std::nullopt;
+            }
+            itype_id template_recipe_id = options[sub_menu.ret].first;
+        }
+
+
+        // --- 输入数量 ---
+        string_input_popup popup_input;
+        popup_input.title( _( "Enter quantity to manufacture:" ) )
+        .text( "1" )
+        .width( 10 )
+        .only_digits( true );
+
+        if( popup_input.canceled() ) {
+            add_msg( m_info, _( "Never mind." ) );
+            return std::nullopt;
+        }
+
+        craft_qty = std::stoi( popup_input.text() );
+        if( craft_qty <= 0 ) {
+            add_msg( m_info, _( "Invalid quantity." ) );
+            return std::nullopt;
+        }
+
+        int base_qty = std::max( 1, item( content_id ).volume() / 250_ml );
+        reqs = *nanofab_template->type->template_requirements * ( base_qty * craft_qty );
     }
 
-    // either way the new item should have the nanofabricator flag
-    if( !new_item.has_flag( flag_NANOFAB_REPAIR ) ) {
-        new_item.set_flag( flag_NANOFAB_REPAIR );
-    }
-
+    // 检查材料
     if( !reqs.can_make_with_inventory( you->crafting_inventory(), is_crafting_component ) ) {
         popup( "%s", reqs.list_missing() );
         return std::nullopt;
     }
 
-    // Consume materials
+    // 消耗材料
     for( const auto &e : reqs.get_components() ) {
         you->consume_items( e, 1, is_crafting_component );
     }
@@ -9240,14 +9283,29 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
     }
     you->invalidate_crafting_inventory();
 
-    if( new_item.is_armor() && new_item.has_flag( flag_VARSIZE ) ) {
-        new_item.set_flag( flag_FIT );
+    // 批量制造
+    for( int i = 0; i < craft_qty; i++ ) {
+        item new_item( content_id, calendar::turn );
+
+        // 如果是模版类物品 → 一次性
+        if( !item::find_type( content_id )->allowed_pocketnanofab_template_id.empty() ) {
+            new_item.set_flag( flag_NANOFAB_TEMPLATE_SINGLE_USE );
+        }
+
+        // 确保带修复标记
+        if( !new_item.has_flag( flag_NANOFAB_REPAIR ) ) {
+            new_item.set_flag( flag_NANOFAB_REPAIR );
+        }
+
+        // 防具自动加 FIT
+        if( new_item.is_armor() && new_item.has_flag( flag_VARSIZE ) ) {
+            new_item.set_flag( flag_FIT );
+        }
+
+        you->i_add_or_drop( new_item );
     }
 
-    you->i_add_or_drop( new_item );
-
-    // if this template is single use
-    // also check if the template exists at all
+    // 如果模板是一次性的 → 删除
     if( nanofab_template && nanofab_template->has_flag( flag_NANOFAB_TEMPLATE_SINGLE_USE ) ) {
         nanofab_template.remove_item();
     }
