@@ -58,3 +58,24 @@ msgstr "你没有可用的模板。\n\n兼容的模板有："
 #: data/json/item_actions.json
 msgid "Craft items with nanomaterials"
 msgstr "制造物品"
+
+#: src/iuse.cpp:9233
+msgid "No manufacturable nanofabricator templates available."
+msgstr "没有可制造的纳米制造机模板"
+
+#: src/iuse.cpp:9238
+msgid "Select the template to manufacture:"
+msgstr "选择要制造的模板："
+
+#: src/iuse.cpp:9253
+msgid "Enter quantity to manufacture:"
+msgstr "输入制造数量："
+
+#: src/iuse.cpp:9264
+msgid "Invalid quantity."
+msgstr "数量不合法"
+
+#: src/iuse.cpp:9314
+#, c-format
+msgid "Item %s fabricated successfully."
+msgstr "成功构建物品 %s"

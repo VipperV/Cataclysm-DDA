@@ -9156,6 +9156,7 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
     std::set<itype_id> allowed_template = it->type->allowed_pocketnanofab_template_id;
     itype_id content_id;
     requirement_data reqs;
+    itype_id template_recipe_id;
     int craft_qty = 1;
 
     if( choice == 0 ) { // 修复功能
@@ -9218,9 +9219,10 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
         }
         content_id = itype_id( nanofab_template->get_var( "NANOFAB_ITEM_ID" ) );
 
-        if( !content_id.is_null() && item::find_type( content_id ) -> nanofab_template_group ) {
+        if( !content_id.is_null() && allowed_template.count( content_id ) > 0 ) {
             std::vector<std::pair<itype_id, std::string>> options;
-            std::set<const itype *> template_recipes = item::find_type( content_id ) -> nanofab_template_group->every_item();
+            std::set<const itype *> template_recipes = item_group::every_possible_item_from( item::find_type(
+                        content_id )->nanofab_template_group );
             for( const itype *recipe : template_recipes ) {
                 itype_id recipe_id = recipe->get_id();
                 if( recipe_id ) {
@@ -9228,7 +9230,7 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
                 }
             }
             if( options.empty() ) {
-                add_msg( m_info, _( "No valid recipes for nanofabricator." ) );
+                add_msg( m_info, _( "No manufacturable nanofabricator templates available." ) );
                 return std::nullopt;
             }
 
@@ -9242,7 +9244,7 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
             if( sub_menu.ret < 0 || static_cast<size_t>( sub_menu.ret ) >= options.size() ) {
                 return std::nullopt;
             }
-            itype_id template_recipe_id = options[sub_menu.ret].first;
+            template_recipe_id = options[sub_menu.ret].first;
         }
 
 
@@ -9251,7 +9253,8 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
         popup_input.title( _( "Enter quantity to manufacture:" ) )
         .text( "1" )
         .width( 10 )
-        .only_digits( true );
+        .only_digits( true )
+        .query();
 
         if( popup_input.canceled() ) {
             add_msg( m_info, _( "Never mind." ) );
@@ -9266,6 +9269,8 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
 
         int base_qty = std::max( 1, item( content_id ).volume() / 250_ml );
         reqs = *nanofab_template->type->template_requirements * ( base_qty * craft_qty );
+    } else {
+        return std::nullopt;
     }
 
     // 检查材料
@@ -9288,8 +9293,9 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
         item new_item( content_id, calendar::turn );
 
         // 如果是模版类物品 → 一次性
-        if( !item::find_type( content_id )->allowed_pocketnanofab_template_id.empty() ) {
+        if( template_recipe_id.is_valid() ) {
             new_item.set_flag( flag_NANOFAB_TEMPLATE_SINGLE_USE );
+            new_item.set_var( "NANOFAB_ITEM_ID", template_recipe_id.str() );
         }
 
         // 确保带修复标记
@@ -9304,6 +9310,9 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
 
         you->i_add_or_drop( new_item );
     }
+
+    popup( _( "Item %s fabricated successfully." ),
+           content_id.is_null() ? _( "unknown" ) : item::nname( content_id ) );
 
     // 如果模板是一次性的 → 删除
     if( nanofab_template && nanofab_template->has_flag( flag_NANOFAB_TEMPLATE_SINGLE_USE ) ) {

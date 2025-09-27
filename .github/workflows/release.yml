@@ -3,7 +3,7 @@ concurrency: release-candidate
 on:
   push:
     branches:
-      - 0.H-branch
+      - 0.H.D-branch
     paths:
       - '.github/workflows/release.yml'
       - 'android/**'
@@ -37,8 +37,8 @@ jobs:
       - name: Generate environmental variables
         id: generate_env_vars
         run: |
-          echo "tag_name=cdda-0.H-${{ steps.get-timestamp.outputs.time }}" >> $GITHUB_OUTPUT
-          echo "release_name=Cataclysm-DDA 0.H release candidate ${{ steps.get-timestamp.outputs.time }}" >> $GITHUB_OUTPUT
+          echo "tag_name=cdda-0.H.D-${{ steps.get-timestamp.outputs.time }}" >> $GITHUB_OUTPUT
+          echo "release_name=Cataclysm-DDA 0.H.D release candidate ${{ steps.get-timestamp.outputs.time }}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
       - name: Generate Release Notes
         id: generate-release-notes
@@ -243,7 +243,7 @@ jobs:
         if: runner.os == 'Linux' && matrix.mxe == 'none' && matrix.android == 'none' && matrix.artifact != 'linux-objectcreator-x64' && !matrix.wasm
         run: |
           make -j$((`nproc`+0)) TILES=${{ matrix.tiles }} SOUND=${{ matrix.tiles }} RELEASE=1 LOCALIZE=1 LANGUAGES=all BACKTRACE=1 PCH=0 bindist
-          mv cataclysmdda-0.H.tar.gz cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.tar.gz
+          mv cataclysmdda-0.H.D.tar.gz cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.tar.gz
       - name: Build CDDA (WebAssembly)
         if: matrix.wasm && success()
         run: |
@@ -291,7 +291,7 @@ jobs:
           PLATFORM: /opt/mxe/usr/bin/${{ matrix.mxe }}-w64-mingw32.static.gcc12-
         run: |
           make -j$((`nproc`+0)) CROSS="${PLATFORM}" TILES=1 SOUND=1 RELEASE=1 LOCALIZE=1 LANGUAGES=all BACKTRACE=1 PCH=0 bindist
-          mv cataclysmdda-0.H.zip cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.zip
+          mv cataclysmdda-0.H.D.zip cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.zip
       - name: Build CDDA (windows msvc)
         if: runner.os == 'Windows'
         env:
@@ -302,7 +302,7 @@ jobs:
         run: |
           msbuild -m -p:Configuration=Release -p:Platform=${{ matrix.arch }} "-target:Cataclysm-vcpkg-static;JsonFormatter-vcpkg-static" msvc-full-features\Cataclysm-vcpkg-static.sln
           .\build-scripts\windist.ps1
-          mv cataclysmdda-0.H.zip cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.zip
+          mv cataclysmdda-0.H.D.zip cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.zip
       - name: Build CDDA (osx)
         if: runner.os == 'macOS'
         run: |
@@ -343,4 +343,4 @@ jobs:
                mv ./app/build/outputs/bundle/experimentalRelease/*.aab ../cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.aab     
           fi
       - run: |
-          gh release upload cdda-0.H-${{ needs.release.outputs.timestamp }} cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.${{ matrix.ext }}
+          gh release upload cdda-0.H.D-${{ needs.release.outputs.timestamp }} cdda-${{ matrix.artifact }}-${{ needs.release.outputs.timestamp }}.${{ matrix.ext }}
