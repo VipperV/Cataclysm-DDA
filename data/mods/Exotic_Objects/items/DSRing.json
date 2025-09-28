@@ -9,12 +9,12 @@
     "price": 5120000000,
     "price_postapoc": 25600000,
     "material": [ { "type": "superalloy" }, { "type": "gold" } ],
-    "use_action": [ "PORTABLE_NANOFABRICATOR" ],
+    "use_action": [ "PORTABLE_AUTODOC", "PORTABLE_NANOFABRICATOR" ],
     "symbol": "[",
     "looks_like": "opal_gold_ring",
     "color": "yellow",
     "sided": true,
-    "allowed_pocketnanofab_template_ids": [ "standard_template_construct", "debug_template" ],
+    "allowed_pocketnanofab_template_ids": [ "standard_template_construct", "debug_template", "advanced_template_construct", "advanced_template_construct_self" ],
     "pocket_data": [
       {
         "pocket_type": "CONTAINER",
@@ -38,5 +38,24 @@
       }
     ],
     "flags": [ "TARDIS", "NANOFAB_REPAIR", "NO_REPAIR", "WATERPROOF", "FANCY", "NO_WEAR_EFFECT", "BELTED", "ALLOWS_TALONS" ]
+  },
+  {
+    "type": "GENERIC",
+    "id": "advanced_template_construct_self",
+    "copy-from": "standard_template_construct",
+    "color": "yellow",
+    "name": { "str": "advanced nanofabricator template" },
+    "description": "A state-of-the-art optical storage system, containing the instruction set to replicate itself.",
+    "nanofab_template_group": "selfreplication_template_item",
+    "template_requirements": "copper_scrap_equivalent"
+  },
+  {
+    "type": "GENERIC",
+    "id": "advanced_template_construct",
+    "copy-from": "standard_template_construct",
+    "color": "yellow",
+    "name": { "str": "advanced nanofabricator template" },
+    "description": "A state-of-the-art optical storage system.  This small slate of transparent glass holds, inscribed as a miniature pattern, the instructions required to create an item through a nanofabricator.",
+    "nanofab_template_group": "advanced_nanofab_recipes"
   }
 ]

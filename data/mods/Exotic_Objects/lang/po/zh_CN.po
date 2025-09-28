@@ -35,6 +35,14 @@ msgid ""
 "of items, and it is also equipped with an advanced portable nanofabricator."
 msgstr "一个包含口袋维度的环，可以存储大量物品，同时还配备了先进的便携式纳米制造器。"
 
+#. ~ Item name
+#: data/mods/Exotic_Objects/items/DSRing.json
+msgid "advanced nanofabricator template"
+msgid_plural "advanced nanofabricator templates"
+msgstr[0] "高级纳米制造模板"
+msgstr[1] "高级纳米制造模板"
+
+
 #. ~ Mutation name
 #: data/mods/Exotic_Objects/mutations/mutations.json
 msgid "Enhanced HP"

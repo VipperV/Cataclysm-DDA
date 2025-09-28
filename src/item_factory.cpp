@@ -1847,6 +1847,7 @@ void Item_factory::init()
     add_iuse( "CALORIES_INTAKE_TRACKER", &iuse::calories_intake_tracker );
     add_iuse( "VOLTMETER", &iuse::voltmeter );
     add_iuse( "PORTABLE_NANOFABRICATOR", &iuse::pocket_nanofab );
+    add_iuse( "PORTABLE_AUTODOC", &iuse::portable_autodoc );
 
     add_actor( std::make_unique<ammobelt_actor>() );
     add_actor( std::make_unique<consume_drug_iuse>() );

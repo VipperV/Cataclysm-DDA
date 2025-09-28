@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: None\n"
-"POT-Creation-Date: 2025-09-25 22:32+0800\n"
-"PO-Revision-Date: 2025-09-25 22:32+0800\n"
+"POT-Creation-Date: 2025-09-28 17:04+0800\n"
+"PO-Revision-Date: 2025-09-28 17:04+0800\n"
 "Last-Translator: None\n"
 "Language-Team: None\n"
 "Language: en\n"
@@ -31,6 +31,23 @@ msgstr[1] ""
 #. ~ Description of "dimensional storage ring"
 #: data/mods/Exotic_Objects/items/DSRing.json
 msgid "A ring that contains a pocket dimension allowing it to store a large amount of items, and it is also equipped with an advanced portable nanofabricator."
+msgstr ""
+
+#. ~ Item name
+#: data/mods/Exotic_Objects/items/DSRing.json
+msgid "advanced nanofabricator template"
+msgid_plural "advanced nanofabricator templates"
+msgstr[0] ""
+msgstr[1] ""
+
+#. ~ Description of "advanced nanofabricator template"
+#: data/mods/Exotic_Objects/items/DSRing.json
+msgid "A state-of-the-art optical storage system, containing the instruction set to replicate itself."
+msgstr ""
+
+#. ~ Description of "advanced nanofabricator template"
+#: data/mods/Exotic_Objects/items/DSRing.json
+msgid "A state-of-the-art optical storage system.  This small slate of transparent glass holds, inscribed as a miniature pattern, the instructions required to create an item through a nanofabricator."
 msgstr ""
 
 #. ~ Mutation name

@@ -54,6 +54,11 @@ msgid ""
 "Compatible templates are: "
 msgstr "你没有可用的模板。\n\n兼容的模板有："
 
+#. ~ Item action name of "PORTABLE_AUTODOC"
+#: data/json/item_actions.json
+msgid "Use autodoc"
+msgstr "使用自动医疗仪"
+
 #. ~ Item action name of "PORTABLE_NANOFABRICATOR"
 #: data/json/item_actions.json
 msgid "Craft items with nanomaterials"

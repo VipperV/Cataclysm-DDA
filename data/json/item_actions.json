@@ -1085,6 +1085,11 @@
   },
   {
     "type": "item_action",
+    "id": "PORTABLE_AUTODOC",
+    "name": { "str": "Use autodoc" }
+  },
+  {
+    "type": "item_action",
     "id": "play_instrument",
     "name": { "str": "Play instrument" }
   },
