@@ -1,0 +1,80 @@
+[
+  {
+    "id": "suit_mech_lifter",
+    "type": "TOOL",
+    "name": { "str": "X-01: 'Jack' Lifting Mech" },
+    "description": "The Boeing-Daewoo LMES (Lifting Mechanical Exoskeleton Suit), a recent acquisition by the U.S. military, it was designed to be piloted by an operator to load and unload heavy material, and for limited combat support roles.  It was not deployed before the Cataclysm hit, though there were a few prototypes in the field.  You may be able to hack it to accept you as its pilot.  Like all mech-suits, it can act as a UPS from its large battery.",
+    "weight": "128038 g",
+    "volume": "128038 ml",
+    "price": 6000000,
+    "price_postapoc": 800000,
+    "to_hit": -3,
+    "material": [ "superalloy" ],
+    "symbol": "M",
+    "looks_like": "mon_mech_lifter",
+    "color": "yellow",
+    "use_action": {
+      "type": "place_monster",
+      "monster_id": "mon_mech_lifter",
+      "friendly_msg": "The suit beeps affirmatively and awaits orders.",
+      "hostile_msg": "You misprogram the suit; it's hostile!",
+      "difficulty": 4,
+      "moves": 300,
+      "skills": [ "electronics", "computer" ]
+    },
+    "flags": [ "SINGLE_USE" ],
+    "melee_damage": { "bash": 8 }
+  },
+  {
+    "id": "suit_mech_combat",
+    "type": "TOOL",
+    "name": { "str": "X-02: 'Grunt' Combat Mech" },
+    "description": "The Boeing-Daewoo CMES (Combat Mechanical Exoskeleton Suit), a recent acquisition by the U.S. military, it was designed to be used in a fire support role, due to its fearsome integrated gatling laser.  It was not deployed before the Cataclysm hit, though there were a few prototypes in the field.  You may be able to hack it to accept you as its pilot.  Like all mech-suits, it can act as a UPS from its large battery.",
+    "weight": "148038 g",
+    "volume": "148038 ml",
+    "price": 9000000,
+    "price_postapoc": 1200000,
+    "to_hit": -3,
+    "material": [ "superalloy" ],
+    "symbol": "M",
+    "looks_like": "mon_mech_combat",
+    "color": "red",
+    "use_action": {
+      "type": "place_monster",
+      "monster_id": "mon_mech_combat",
+      "friendly_msg": "The suit beeps affirmatively and awaits orders.",
+      "hostile_msg": "You misprogram the suit; it's hostile!",
+      "difficulty": 5,
+      "moves": 360,
+      "skills": [ "electronics", "computer" ]
+    },
+    "flags": [ "SINGLE_USE" ],
+    "melee_damage": { "bash": 8 }
+  },
+  {
+    "id": "suit_mech_recon",
+    "type": "TOOL",
+    "name": { "str": "X-03: 'Spectre' Recon Mech" },
+    "description": "The Boeing-Daewoo RMES (Recon Mechanical Exoskeleton Suit), a recent acquisition by the U.S. military, it was designed to be used in a scout-recon-sniper role, due to its mobility, integrated laser sniper rifle, and suite of optics for target designation and battlefield awareness.  It was not deployed before the Cataclysm hit, though there were a few prototypes in the field.  You may be able to hack it to accept you as its pilot.  Like all mech-suits, it can act as a UPS from its large battery.",
+    "weight": "70038 g",
+    "volume": "70038 ml",
+    "price": 9000000,
+    "price_postapoc": 1200000,
+    "to_hit": -3,
+    "material": [ "superalloy" ],
+    "symbol": "M",
+    "looks_like": "mon_mech_recon",
+    "color": "blue",
+    "use_action": {
+      "type": "place_monster",
+      "monster_id": "mon_mech_recon",
+      "friendly_msg": "The suit beeps affirmatively and awaits orders.",
+      "hostile_msg": "You misprogram the suit; it's hostile!",
+      "difficulty": 5,
+      "moves": 360,
+      "skills": [ "electronics", "computer" ]
+    },
+    "flags": [ "SINGLE_USE" ],
+    "melee_damage": { "bash": 8 }
+  }
+]

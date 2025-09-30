@@ -1,0 +1,48 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: None\n"
+"POT-Creation-Date: 2025-09-25 22:32+0800\n"
+"PO-Revision-Date: 2025-09-25 22:34+0800\n"
+"Last-Translator:  <thefirstrobot@hotmail.com>\n"
+"Language-Team: Chinese (simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#. ~ MOD name
+#: data/mods/Exotic_Objects/modinfo.json
+msgid "Exotic Objects"
+msgstr "奇异物体"
+
+#. ~ Description of MOD "Exotic Objects"
+#: data/mods/Exotic_Objects/modinfo.json
+msgid "Added some items and vehicles for supportive purposes."
+msgstr "添加了一些用于辅助目的的物品和载具。"
+
+#. ~ Item name
+#: data/mods/Exotic_Objects/items/DSRing.json
+msgid "dimensional storage ring"
+msgid_plural "dimensional storage rings"
+msgstr[0] "维度储物环"
+msgstr[1] "维度储物环"
+
+#. ~ Description of "dimensional storage ring"
+#: data/mods/Exotic_Objects/items/DSRing.json
+msgid ""
+"A ring that contains a pocket dimension allowing it to store a large amount "
+"of items, and it is also equipped with an advanced portable nanofabricator."
+msgstr "一个包含口袋维度的环，可以存储大量物品，同时还配备了先进的便携式纳米制造器。"
+
+#. ~ Mutation name
+#: data/mods/Exotic_Objects/mutations/mutations.json
+msgid "Enhanced HP"
+msgstr "强化生命值"
+
+#. ~ Description of mutation "Enhanced HP"
+#: data/mods/Exotic_Objects/mutations/mutations.json
+msgid ""
+"A prototype genetic enhancement that greatly increases the maximum health "
+"and regeneration of the subject."
+msgstr "一种原型基因强化，可显著提高受试者的最大生命值和生命恢复速度。"

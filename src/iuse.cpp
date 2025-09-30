@@ -9247,7 +9247,6 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
             sub_menu.add_category("gunmod", _("Gunmod"));
             sub_menu.add_category("mod", _("Mod"));
             sub_menu.add_category("engine", _("Engine"));
-            sub_menu.add_category("battery", _("Battery"));
             sub_menu.add_category("wheel", _("Wheel"));
             sub_menu.add_category("misc", _("Misc"));
             sub_menu.add_category("all", _("All"));
@@ -9301,10 +9300,6 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
                     else if (key == "engine")
                     {
                         return item::find_type(options[entry.retval].first)->engine != nullptr;
-                    }
-                    else if (key == "battery")
-                    {
-                        return item::find_type(options[entry.retval].first)->battery != nullptr;
                     }
                     else if (key == "wheel")
                     {
