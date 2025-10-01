@@ -10,6 +10,7 @@
     "healing_awake": 4,
     "healing_multiplier": 5,
     "mending_modifier": 25.0,
+    "fatigue_modifier": -0.5,
     "stamina_regen_modifier": 1,
     "cardio_multiplier": 2
   }
