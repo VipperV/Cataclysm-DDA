@@ -3,13 +3,14 @@
     "type": "mutation",
     "id": "PROTOTYPE_GENETIC_ENHANCEMENT_HP",
     "name": { "str": "Enhanced HP" },
-    "points": 50,
+    "points": 60,
     "valid": false,
     "description": "A prototype genetic enhancement that greatly increases the maximum health and regeneration of the subject.",
-    "enchantments": [ { "values": [ { "value": "MAX_HP", "add": 300 } ] } ],
+    "enchantments": [ { "values": [ { "value": "MAX_HP", "add": 500 } ] } ],
     "healing_awake": 4,
     "healing_multiplier": 5,
     "mending_modifier": 25.0,
-    "stamina_regen_modifier": 0.8
+    "stamina_regen_modifier": 1,
+    "cardio_multiplier": 2
   }
 ]
