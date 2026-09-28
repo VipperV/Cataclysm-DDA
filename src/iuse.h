@@ -193,6 +193,8 @@ std::optional<int> vibe( Character *, item *, const tripoint_bub_ms & );
 std::optional<int> view_photos( Character *, item *, const tripoint_bub_ms & );
 std::optional<int> view_recipes( Character *, item *, const tripoint_bub_ms & );
 std::optional<int> voltmeter( Character *p, item *it, const tripoint_bub_ms & );
+std::optional<int> pocket_nanofab( Character *, item *, const tripoint_bub_ms & );
+std::optional<int> portable_autodoc( Character *, item *, const tripoint_bub_ms & );
 std::optional<int> vortex( Character *, item *, const tripoint_bub_ms & );
 std::optional<int> wash_all_items( Character *, item *, const tripoint_bub_ms & );
 std::optional<int> wash_hard_items( Character *, item *, const tripoint_bub_ms & );

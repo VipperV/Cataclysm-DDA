@@ -1,0 +1,12 @@
+[
+  {
+    "type": "item_action",
+    "id": "PORTABLE_NANOFABRICATOR",
+    "name": { "str": "Craft items with nanomaterials" }
+  },
+  {
+    "type": "item_action",
+    "id": "PORTABLE_AUTODOC",
+    "name": { "str": "Use autodoc" }
+  }
+]

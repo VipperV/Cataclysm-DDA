@@ -2115,6 +2115,8 @@ void Item_factory::init()
     add_iuse( "DBG_LUX_METER", &iuse::dbg_lux_meter );
     add_iuse( "CALORIES_INTAKE_TRACKER", &iuse::calories_intake_tracker );
     add_iuse( "VOLTMETER", &iuse::voltmeter );
+    add_iuse( "PORTABLE_NANOFABRICATOR", &iuse::pocket_nanofab );
+    add_iuse( "PORTABLE_AUTODOC", &iuse::portable_autodoc );
 
     add_actor( std::make_unique<ammobelt_actor>() );
     add_actor( std::make_unique<consume_drug_iuse>() );
@@ -2281,6 +2283,11 @@ void Item_factory::check_definitions() const
 
         if( !type->category_force.is_valid() ) {
             msg += "undefined category " + type->category_force.str() + "\n";
+        }
+        for( const itype_id &id : type->allowed_pocketnanofab_template_id ) {
+            if( !id.is_valid() || id.is_null() ) {
+                msg += "undefined portable nanofabricator template " + id.str() + "\n";
+            }
         }
         if( type->has_flag( flag_ENERGY_SHIELD ) && !type->armor ) {
             msg += "has ENERGY_SHIELD flag specified but the item isn't armor";
@@ -4152,6 +4159,7 @@ void itype::load( const JsonObject &jo, std::string_view src )
     optional( jo, was_loaded, "phase", phase, phase_id::SOLID );
 
     optional( jo, was_loaded, "nanofab_template_group", nanofab_template_group );
+    optional( jo, was_loaded, "allowed_pocketnanofab_template_ids", allowed_pocketnanofab_template_id );
 
     optional( jo, was_loaded, "trait_group", trait_group );
 

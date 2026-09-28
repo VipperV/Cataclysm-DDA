@@ -1,0 +1,12 @@
+[
+  {
+    "type": "MOD_INFO",
+    "id": "exotic_objects",
+    "name": "Exotic Objects",
+    "authors": [ "acid101" ],
+    "description": "Added some items and vehicles for supportive purposes.",
+    "category": "misc_additions",
+    "dependencies": [ "dda" ],
+    "path": ""
+  }
+]

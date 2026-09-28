@@ -273,7 +273,7 @@ activity_handlers::finish_functions = {
     { ACT_PLANT_SEED, plant_seed_finish },
     { ACT_VEHICLE, vehicle_finish },
     { ACT_START_ENGINES, start_engines_finish },
-    { ACT_REPAIR_ITEM, repair_item_finish },
+    { ACT_REPAIR_ITEM, []( player_activity *act, Character *you ) { repair_item_finish( act, you ); } },
     { ACT_HEATING, heat_item_finish },
     { ACT_MEND_ITEM, mend_item_finish },
     { ACT_TOOLMOD_ADD, toolmod_add_finish },

@@ -67,8 +67,11 @@
 #include "inventory_ui.h"
 #include "item.h"
 #include "item_contents.h"
+#include "item_category.h"
+#include "item_factory.h"
 #include "item_location.h"
 #include "item_pocket.h"
+#include "localized_comparator.h"
 #include "iteminfo_query.h"
 #include "itype.h"
 #include "json.h"
@@ -324,6 +327,7 @@ static const itype_id itype_tongs( "tongs" );
 static const itype_id itype_toolset( "toolset" );
 static const itype_id itype_towel( "towel" );
 static const itype_id itype_towel_wet( "towel_wet" );
+static const itype_id itype_nanomaterial( "nanomaterial" );
 static const itype_id itype_water( "water" );
 static const itype_id itype_water_clean( "water_clean" );
 static const itype_id itype_water_purifying( "water_purifying" );
@@ -9254,4 +9258,586 @@ std::optional<int> use_function::call( Character *p, item &it,
                                        map *here, const tripoint_bub_ms &pos ) const
 {
     return actor->use( p, it, here, pos );
+}
+
+std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoint_bub_ms & )
+{
+    if( !you || !you->is_avatar() ) {
+        return std::nullopt;
+    }
+
+    uilist menu;
+    menu.title = _( "Choose an action:" );
+    menu.addentry( 0, true, 'r', _( "Repair items" ) );
+    menu.addentry( 1, true, 'm', _( "Manufacture items" ) );
+
+    menu.query();
+    int choice = menu.ret;
+
+    item_location repair_target;
+    item_location nanofab_template;
+    const std::set<itype_id> allowed_template = it->type->allowed_pocketnanofab_template_id;
+    itype_id content_id;
+    requirement_data reqs;
+    itype_id template_recipe_id;
+    int craft_qty = 1;
+
+    if( choice == 0 ) {
+
+        item_location loc = g->inv_map_splice( []( const item & e ) {
+            return e.damage_level() > 0 && !e.has_flag( flag_NO_REPAIR ) && e.has_flag( flag_NANOFAB_REPAIR );
+        }
+        , _( "Select an item to repair" ), 1, _( "You have no items to repair." ) );
+
+        if( !loc ) {
+            return std::nullopt;
+        }
+
+        content_id = loc->typeId();
+
+        if( !loc->empty() ) {
+            popup( _( "Item %s detected, contents of item will be destroyed by fabricator. Please empty the item and return." ),
+                   loc->display_name() );
+            return std::nullopt;
+        }
+
+        if( !query_yn( _( "Fabricator-compliant item %s detected, repair integrity damage?" ),
+                       loc->display_name() ) ) {
+            return std::nullopt;
+        }
+
+        int damage = loc->damage_level();
+        float dam_mult = .05f * damage;
+        int qty = std::max( 1, static_cast<int>( dam_mult * loc->volume() / 250_ml ) );
+
+        std::vector<std::vector<item_comp>> requirement_comp_vector;
+        std::vector<std::vector<quality_requirement>> quality_comp_vector;
+        std::vector<std::vector<tool_comp>> tool_comp_vector;
+        std::vector<item_comp> nano_req = { item_comp( itype_nanomaterial, 5 * qty ) };
+        requirement_comp_vector.push_back( nano_req );
+        repair_target = loc;
+        reqs = requirement_data( tool_comp_vector, quality_comp_vector, requirement_comp_vector );
+
+    } else if( choice == 1 ) {
+        //Create a list of the names of all acceptable templates.
+        std::set<std::string> templatenames;
+        for( const itype_id &id : allowed_template ) {
+            templatenames.insert( id->nname( 1 ) );
+        }
+        std::string name_list = enumerate_as_string( templatenames );
+
+        //Template selection
+        nanofab_template = g->inv_map_splice( [&]( const item & e ) {
+            return  std::any_of( allowed_template.begin(), allowed_template.end(),
+            [&e]( const itype_id itid ) {
+                return e.typeId() == itid;
+            } );
+        }, _( "Introduce a compatible template." ), PICKUP_RANGE,
+        _( "You don't have any usable templates.\n\nCompatible templates are: " ) + name_list );
+
+        if( !nanofab_template ) {
+            return std::nullopt;
+        }
+        content_id = item_controller->migrate_id(
+                         itype_id( nanofab_template->get_var( "NANOFAB_ITEM_ID" ) ) );
+        if( content_id.is_null() || !content_id.is_valid() || nanofab_template->type->template_requirements.is_null() ||
+            !nanofab_template->type->template_requirements.is_valid() ) {
+            add_msg( m_info, _( "This template contains no valid fabrication recipe." ) );
+            return std::nullopt;
+        }
+
+        if( !content_id.is_null() && allowed_template.count( content_id ) > 0 ) {
+            std::vector<std::pair<itype_id, std::string>> options;
+            std::set<const itype *> template_recipes = item_group::every_possible_item_from( item::find_type(
+                        content_id )->nanofab_template_group );
+            for( const itype *recipe : template_recipes ) {
+                itype_id recipe_id = recipe->get_id();
+                if( !recipe_id.is_null() && recipe_id.is_valid() ) {
+                    options.emplace_back( recipe_id, item::nname( recipe_id ) );
+                }
+            }
+            if( options.empty() ) {
+                add_msg( m_info, _( "No manufacturable nanofabricator templates available." ) );
+                return std::nullopt;
+            }
+
+            std::sort( options.begin(), options.end(), []( const auto &lhs, const auto &rhs ) {
+                return localized_compare( lhs.second, rhs.second );
+            } );
+
+            uilist sub_menu;
+            sub_menu.title = _( "Select the template to manufacture:" );
+            sub_menu.filtering = true;
+            std::vector<item_category_id> categories;
+            std::set<item_category_id> seen_categories;
+            sub_menu.add_category( "all", _( "All" ) );
+            for( const auto &option : options ) {
+                const item_category &category = item( option.first ).get_category_shallow();
+                categories.push_back( category.get_id() );
+                if( seen_categories.insert( category.get_id() ).second ) {
+                    sub_menu.add_category( category.get_id().str(), category.name_header() );
+                }
+            }
+            sub_menu.set_category_filter( [categories]( const uilist_entry &entry,
+            const std::string &key ) {
+                return key == "all" || categories[entry.retval].str() == key;
+            } );
+
+            for( size_t i = 0; i < options.size(); ++i ) {
+                sub_menu.addentry( i, true, -1, options[i].second );
+            }
+            sub_menu.set_category( "all" );
+            sub_menu.query();
+
+            if( sub_menu.ret < 0 || static_cast<size_t>( sub_menu.ret ) >= options.size() ) {
+                return std::nullopt;
+            }
+            template_recipe_id = options[sub_menu.ret].first;
+        }
+
+
+        string_input_popup popup_input;
+        const std::optional<int> quantity = popup_input
+                .title( _( "Enter quantity to manufacture (1-10000):" ) )
+                .text( "1" ).width( 10 ).query_int();
+        if( !quantity ) {
+            return std::nullopt;
+        }
+        if( *quantity <= 0 || *quantity > 10000 ) {
+            add_msg( m_info, _( "Invalid quantity." ) );
+            return std::nullopt;
+        }
+        craft_qty = *quantity;
+        const int base_qty = std::max( 1, item( content_id ).volume() / 250_ml );
+        if( base_qty > INT_MAX / craft_qty ) {
+            add_msg( m_info, _( "Invalid quantity." ) );
+            return std::nullopt;
+        }
+        const int multiplier = base_qty * craft_qty;
+        const requirement_data &base_requirements = *nanofab_template->type->template_requirements;
+        const auto can_scale = [multiplier]( const auto &groups ) {
+            for( const auto &group : groups ) {
+                for( const auto &component : group ) {
+                    if( component.count > INT_MAX / multiplier || component.count < INT_MIN / multiplier ) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        };
+        if( !can_scale( base_requirements.get_components() ) || !can_scale( base_requirements.get_tools() ) ) {
+            add_msg( m_info, _( "Invalid quantity." ) );
+            return std::nullopt;
+        }
+        reqs = base_requirements * multiplier;
+    } else {
+        return std::nullopt;
+    }
+
+    // Check materials before making any changes.
+    if( !reqs.can_make_with_inventory( you->crafting_inventory(), is_crafting_component ) ) {
+        popup( "%s", reqs.list_missing() );
+        return std::nullopt;
+    }
+
+    // Consume materials.
+    for( const auto &e : reqs.get_components() ) {
+        you->consume_items( e, 1, is_crafting_component );
+    }
+    for( const auto &e : reqs.get_tools() ) {
+        you->consume_tools( e );
+    }
+    you->invalidate_crafting_inventory();
+
+    if( repair_target ) {
+        // Repair the selected object, preserving its modifications and identity.
+        repair_target->set_degradation( 0 );
+        repair_target->set_damage( 0 );
+        return 1;
+    }
+
+    // Manufacture the requested batch.
+    for( int i = 0; i < craft_qty; i++ ) {
+        item new_item( content_id, calendar::turn );
+
+        // Fabricated templates contain the selected recipe and are single-use.
+        if( template_recipe_id.is_valid() ) {
+            new_item.set_flag( flag_NANOFAB_TEMPLATE_SINGLE_USE );
+            new_item.set_var( "NANOFAB_ITEM_ID", template_recipe_id.str() );
+        }
+
+        // Manufactured items remain nanofabricator-repairable.
+        if( !new_item.has_flag( flag_NANOFAB_REPAIR ) ) {
+            new_item.set_flag( flag_NANOFAB_REPAIR );
+        }
+
+        // Fit variable-size armor.
+        if( new_item.is_armor() && new_item.has_flag( flag_VARSIZE ) ) {
+            new_item.set_flag( flag_FIT );
+        }
+        item packaged_item = new_item.in_its_container();
+        you->i_add_or_drop( packaged_item );
+    }
+
+    popup( _( "Item %s fabricated successfully." ),
+           content_id.is_null() ? _( "unknown" ) : item::nname( content_id ) );
+
+    // Consume a single-use template only after successful fabrication.
+    if( nanofab_template && nanofab_template->has_flag( flag_NANOFAB_TEMPLATE_SINGLE_USE ) ) {
+        nanofab_template.remove_item();
+    }
+    return 1;
+}
+
+std::optional<int> iuse::portable_autodoc( Character *you, item *, const tripoint_bub_ms & )
+{
+    if( !you || !you->is_avatar() ) {
+        return std::nullopt;
+    }
+
+    enum options {
+        INSTALL_CBM,
+        UNINSTALL_CBM,
+        BONESETTING,
+        TREAT_WOUNDS,
+        RAD_AWAY,
+        BLOOD_ANALYSIS,
+    };
+
+    Character &patient = *you;
+
+    const efftype_id effect_bite( "bite" );
+    const efftype_id effect_disinfected( "disinfected" );
+    const efftype_id effect_mending( "mending" );
+    const efftype_id effect_pblue( "pblue" );
+    const itype_id itype_leg_splint( "leg_splint" );
+    const itype_id itype_arm_splint( "arm_splint" );
+    const quality_id qual_ANESTHESIA( "ANESTHESIA" );
+    const requirement_id requirement_data_anesthetic( "anesthetic" );
+    const bionic_id bio_painkiller( "bio_painkiller" );
+
+    const int arm_splints_count = you->amount_of( itype_arm_splint );
+    const int leg_splints_count = you->amount_of( itype_leg_splint );
+
+    std::string autodoc_header = _( "Autodoc Mk. XI.  Status: Online.  Please choose operation" );
+
+    autodoc_header +=
+        string_format(
+            _( "\n\n<color_white>Internal supplies:</color>\n Arm splints: %d\n Leg splints: %d" ),
+            arm_splints_count, leg_splints_count );
+
+    uilist amenu;
+    amenu.text = autodoc_header;
+    amenu.addentry( INSTALL_CBM, true, 'i', _( "Choose Compact Bionic Module to install" ) );
+    amenu.addentry( UNINSTALL_CBM, true, 'u', _( "Choose installed bionic to uninstall" ) );
+    amenu.addentry( BONESETTING, true, 's', _( "Splint broken limbs" ) );
+    amenu.addentry( TREAT_WOUNDS, true, 'w', _( "Treat wounds" ) );
+    amenu.addentry( RAD_AWAY, true, 'r', _( "Check radiation level" ) );
+    amenu.addentry( BLOOD_ANALYSIS, true, 'b', _( "Conduct blood analysis" ) );
+
+    amenu.query();
+
+    bool needs_anesthesia = true;
+    std::vector<tool_comp> anesth_kit;
+
+    if( patient.has_flag( json_flag_PAIN_IMMUNE ) || patient.has_bionic( bio_painkiller ) ||
+        amenu.ret > 1 ) {
+        needs_anesthesia = false;
+    } else {
+        const inventory &crafting_inv = you->crafting_inventory();
+        std::vector<const item *> a_filter = crafting_inv.items_with( [&qual_ANESTHESIA](
+        const item & it ) {
+            return it.has_quality( qual_ANESTHESIA );
+        } );
+        for( const item *anesthesia_item : a_filter ) {
+            if( anesthesia_item->ammo_remaining() >= 1 ) {
+                anesth_kit.emplace_back( anesthesia_item->typeId(), 1 );
+            }
+        }
+    }
+
+    switch( amenu.ret ) {
+        case INSTALL_CBM: {
+            item_location bionic = game_menus::inv::install_bionic( *you, *you, patient );
+
+            if( !bionic ) {
+                return std::nullopt;
+            }
+
+            const itype *itemtype = bionic.get_item()->type;
+
+            Character &installer = *you;
+
+            std::vector<item_comp> progs;
+            bool has_install_program = false;
+
+            std::vector<const item *> install_programs = you->crafting_inventory().items_with( [itemtype](
+                        const item & it ) -> bool { return it.typeId() == itemtype->bionic->installation_data; } );
+
+            if( !install_programs.empty() ) {
+                has_install_program = true;
+                progs.emplace_back( install_programs[0]->typeId(), 1 );
+            }
+
+            const int weight = units::to_kilogram( patient.bodyweight() ) / 10;
+            const int surgery_duration = itemtype->bionic->difficulty * 2;
+            const requirement_data req_anesth = *requirement_data_anesthetic *
+                                                surgery_duration * weight;
+
+            if( patient.can_install_bionics( ( *itemtype ), installer, true, has_install_program ? 30 : 20 ) ) {
+                const time_duration duration = itemtype->bionic->difficulty * 20_minutes;
+                patient.introduce_into_anesthesia( duration, installer, needs_anesthesia );
+                bionic.remove_item();
+                if( has_install_program ) {
+                    you->consume_items( progs );
+                }
+                if( needs_anesthesia ) {
+                    for( const auto &e : req_anesth.get_components() ) {
+                        you->consume_items( e, 1, is_crafting_component );
+                    }
+                    for( const auto &e : req_anesth.get_tools() ) {
+                        you->consume_tools( e );
+                    }
+                    you->invalidate_crafting_inventory();
+                }
+                installer.mod_moves( -to_moves<int>( 1_minutes ) );
+
+                bool autodoc = true;
+                int skill_level = has_install_program ? 30 : 20;
+                const bionic_id &bioid = ( *itemtype ).bionic->id;
+                const bionic_id &upbioid = bioid->upgraded_bionic;
+                const int difficulty = ( *itemtype ).bionic->difficulty;
+                int pl_skill = installer.bionics_pl_skill( autodoc, skill_level );
+                int chance_of_success = bionic_success_chance( autodoc, skill_level, difficulty, installer );
+                bionic_uid upbio_uid = 0;
+
+                // TODO: Let the player pick a bionic to upgrade (if dupes exist)
+                if( auto upbio = patient.find_bionic_by_type( upbioid ) ) {
+                    upbio_uid = ( *upbio )->get_uid();
+                }
+
+                int success = chance_of_success - rng( 0, 99 );
+                patient.perform_install( bioid, upbio_uid, difficulty, success, pl_skill,
+                                         installer.disp_name( true ),
+                                         bioid->canceled_mutations, patient.pos_bub() );
+            }
+            break;
+        }
+
+        case UNINSTALL_CBM: {
+            const bionic_collection &installed_bionics = *patient.my_bionics;
+            if( installed_bionics.empty() ) {
+                popup( _( "You don't have any bionics installed." ) );
+                return std::nullopt;
+            }
+
+            std::vector<bionic_id> bio_list;
+            std::vector<std::string> bionic_names;
+            std::vector<const bionic *> bionics;
+            for( const bionic &bio : installed_bionics ) {
+                if( item::type_is_defined( bio.info().itype() ) && bio.info().itype()->bionic ) {
+                    bio_list.emplace_back( bio.id );
+                    bionic_names.emplace_back( bio.info().name.translated() );
+                    bionics.push_back( &bio );
+                }
+            }
+            int bionic_index = uilist( _( "Choose bionic to uninstall" ), bionic_names );
+            if( bionic_index < 0 ) {
+                return std::nullopt;
+            }
+
+            const bionic_id &bid = bio_list[bionic_index];
+            const int difficulty = bid->itype()->bionic->difficulty;
+            const float volume_anesth = difficulty * 20 * 2; // 2ml/min
+
+            Character &installer = *you;
+
+            if( needs_anesthesia ) {
+                for( tool_comp &tool : anesth_kit ) {
+                    tool.count = static_cast<int>( volume_anesth );
+                }
+                const requirement_data anesthetic_requirements( { anesth_kit }, {}, {} );
+                if( anesth_kit.empty() || !anesthetic_requirements.can_make_with_inventory(
+                        you->crafting_inventory(), is_crafting_component ) ) {
+                    popup( _( "Not enough anesthetic for this operation." ) );
+                    return std::nullopt;
+                }
+            }
+
+            if( patient.can_uninstall_bionic( *bionics[bionic_index], installer, true, 30 ) ) {
+                const time_duration duration = difficulty * 20_minutes;
+                patient.introduce_into_anesthesia( duration, installer, needs_anesthesia );
+                if( needs_anesthesia ) {
+                    you->consume_tools( anesth_kit );
+                    you->invalidate_crafting_inventory();
+                }
+                installer.mod_moves( -to_moves<int>( 1_minutes ) );
+
+                const bionic &bio = *bionics[bionic_index];
+                const int pl_skill = patient.bionics_pl_skill( true, 30 );
+                const int chance_of_success = bionic_success_chance( true, 30, difficulty + 2, installer );
+
+                // Portable surgery finishes immediately; a furniture operation activity
+                // would abort without a stationary autodoc and surgical couch.
+                for( bionic &installed : *installer.my_bionics ) {
+                    if( installed.powered && installed.info().has_flag( json_character_flag( "BIONIC_WEAPON" ) ) ) {
+                        installer.deactivate_bionic( installed );
+                    }
+                }
+                const int success = chance_of_success - rng( 1, 100 );
+                patient.perform_uninstall( bio, difficulty, success, pl_skill );
+            }
+            break;
+        }
+
+        case BONESETTING: {
+            int broken_limbs_count = 0;
+            for( const bodypart_id &part :
+                 patient.get_all_body_parts( get_body_part_flags::only_main ) ) {
+                const bool broken = patient.is_limb_broken( part );
+                effect &existing_effect = patient.get_effect( effect_mending, part );
+                // Skip part if not broken or already healed 50%
+                if( !broken || ( !existing_effect.is_null() &&
+                                 existing_effect.get_duration() >
+                                 existing_effect.get_max_duration() - 5_days - 1_turns ) ) {
+                    continue;
+                }
+                if( !patient.worn_with_flag( flag_SPLINT, part ) ) {
+                    itype_id splint_id;
+                    if( part == bodypart_id( "arm_l" ) || part == bodypart_id( "arm_r" ) ) {
+                        splint_id = itype_arm_splint;
+                    } else if( part == bodypart_id( "leg_l" ) || part == bodypart_id( "leg_r" ) ) {
+                        splint_id = itype_leg_splint;
+                    } else {
+                        continue;
+                    }
+                    if( !you->has_amount( splint_id, 1 ) ) {
+                        continue;
+                    }
+                    for( item &splint : you->use_amount( splint_id, 1 ) ) {
+                        if( !patient.wear_item( splint, false ) ) {
+                            // Return the supply if anatomy or equipment prevents wearing it.
+                            you->i_add_or_drop( splint );
+                        }
+                    }
+                }
+
+                if( patient.worn_with_flag( flag_SPLINT, part ) ) {
+                    broken_limbs_count++;
+                    patient.mod_moves( -500 );
+                    patient.add_msg_player_or_npc( m_good, _( "The machine rapidly sets and splints your broken %s." ),
+                                                   _( "The machine rapidly sets and splints <npcname>'s broken %s." ),
+                                                   body_part_name( part ) );
+                    patient.add_effect( effect_mending, 0_turns, part, true );
+                    effect &mending_effect = patient.get_effect( effect_mending, part );
+                    mending_effect.set_duration( mending_effect.get_max_duration() - 5_days );
+                }
+            }
+            if( broken_limbs_count == 0 ) {
+                popup( _( "You have no limbs that require splinting." ) );
+            }
+            break;
+        }
+
+        case TREAT_WOUNDS: {
+            if( !patient.has_effect( effect_bleed ) && !patient.has_effect( effect_infected ) &&
+                !patient.has_effect( effect_bite ) && !patient.has_effect( effect_tetanus ) ) {
+                add_msg( m_info, _( "You don't have any wounds that need treatment." ) );
+                return std::nullopt;
+            }
+
+            if( patient.has_effect( effect_infected ) || patient.has_effect( effect_tetanus ) ) {
+                if( patient.has_effect( effect_strong_antibiotic ) ||
+                    patient.has_effect( effect_antibiotic ) ||
+                    patient.has_effect( effect_weak_antibiotic ) ) {
+                    patient.add_msg_player_or_npc( m_info,
+                                                   _( "The Autodoc detected a bacterial infection in your body, but as it also detected you've already taken antibiotics, it decided not to apply another dose right now." ),
+                                                   _( "The Autodoc detected a bacterial infection in <npcname>'s body, but as it also detected they've already taken antibiotics, it decided not to apply another dose right now." ) );
+                } else {
+                    patient.add_effect( effect_strong_antibiotic, 12_hours );
+                    patient.add_effect( effect_strong_antibiotic_visible, rng( 9_hours, 15_hours ) );
+                    patient.mod_pain( 3 );
+                    patient.add_msg_player_or_npc( m_good,
+                                                   _( "The Autodoc detected a bacterial infection in your body and injected antibiotics to treat it." ),
+                                                   _( "The Autodoc detected a bacterial infection in <npcname>'s body and injected antibiotics to treat it." ) );
+
+                    if( patient.has_effect( effect_tetanus ) ) {
+                        if( one_in( 3 ) ) {
+                            patient.remove_effect( effect_tetanus );
+                            patient.add_msg_if_player( m_good, _( "The muscle spasms start to go away." ) );
+                        } else {
+                            patient.add_msg_if_player( m_warning, _( "The medication does nothing to help the spasms." ) );
+                        }
+                    }
+                }
+            }
+
+            for( const bodypart_id &bp_healed :
+                 patient.get_all_body_parts( get_body_part_flags::only_main ) ) {
+                if( patient.has_effect( effect_bleed, bp_healed.id() ) ) {
+                    patient.remove_effect( effect_bleed, bp_healed );
+                    patient.add_msg_player_or_npc( m_good,
+                                                   _( "The Autodoc detected ongoing blood loss from your %s and administered you hemostatic drugs to stop it." ),
+                                                   _( "The Autodoc detected ongoing blood loss from <npcname>'s %s and administered them hemostatic drugs to stop it." ),
+                                                   body_part_name( bp_healed ) );
+                }
+
+                if( patient.has_effect( effect_bite, bp_healed.id() ) ) {
+                    patient.remove_effect( effect_bite, bp_healed );
+                    patient.add_msg_player_or_npc( m_good,
+                                                   _( "The Autodoc detected an open wound on your %s and applied disinfectant to sterilize it." ),
+                                                   _( "The Autodoc detected an open wound on <npcname>'s %s and applied disinfectant to sterilize it." ),
+                                                   body_part_name( bp_healed ) );
+
+                    // Fixed disinfectant intensity of 4 disinfectant_power + 10 first aid skill level of Autodoc.
+                    const int disinfectant_intensity = 14;
+                    patient.add_effect( effect_disinfected, 1_turns, bp_healed );
+                    effect &e = patient.get_effect( effect_disinfected, bp_healed );
+                    e.set_duration( e.get_int_dur_factor() * disinfectant_intensity );
+                    patient.set_part_damage_disinfected( bp_healed,
+                                                         patient.get_part_hp_max( bp_healed ) - patient.get_part_hp_cur( bp_healed ) );
+                }
+            }
+            patient.mod_moves( -500 );
+            break;
+        }
+
+        case RAD_AWAY: {
+            patient.mod_moves( -500 );
+            patient.add_msg_player_or_npc( m_info,
+                                           _( "The Autodoc scanned you and detected a radiation level of %d mSv." ),
+                                           _( "The Autodoc scanned <npcname> and detected a radiation level of %d mSv." ),
+                                           patient.get_rad() );
+            if( patient.get_rad() ) {
+                if( patient.has_effect( effect_pblue ) ) {
+                    patient.add_msg_player_or_npc( m_info,
+                                                   _( "The Autodoc detected an anti-radiation drug in your bloodstream, so it decided not to administer you another dose right now." ),
+                                                   _( "The Autodoc detected an anti-radiation drug in <npcname>'s bloodstream, so it decided not to administer them another dose right now." ) );
+                } else {
+                    add_msg( m_good,
+                             _( "The Autodoc administered an anti-radiation drug to treat radiation poisoning." ) );
+                    patient.mod_pain( 3 );
+                    patient.add_effect( effect_pblue, 1_hours );
+                }
+            }
+            if( static_cast<int>( patient.get_leak_level() ) ) {
+                popup( _( "Warning!  Autodoc detected a radiation leak of %d mSv from items in patient's possession.  Urgent decontamination procedures highly recommended." ),
+                       static_cast<int>( patient.get_leak_level() ) );
+            }
+            break;
+        }
+
+        case BLOOD_ANALYSIS: {
+            patient.mod_moves( -500 );
+            patient.conduct_blood_analysis();
+            patient.add_msg_player_or_npc( m_info,
+                                           _( "The Autodoc analyzed your blood." ),
+                                           _( "The Autodoc analyzed <npcname>'s blood." ) );
+            break;
+        }
+
+        default:
+            return std::nullopt;
+    }
+    return 1;
 }

@@ -1441,6 +1441,9 @@ struct itype {
         // itemgroup used to generate the recipes within nanofabricator templates.
         item_group_id nanofab_template_group;
 
+        // Templates accepted by a portable nanofabricator.
+        std::set<itype_id> allowed_pocketnanofab_template_id;
+
         // list of traits.
         string_id<Trait_group> trait_group;
 
