@@ -1,0 +1,11 @@
+[
+  {
+    "type": "mutation",
+    "id": "PROTOTYPE_GENETIC_ENHANCEMENT_MAGIC",
+    "name": { "str": "Enhanced Magic" },
+    "points": 50,
+    "valid": false,
+    "description": "A prototype genetic enhancement that greatly increases the mana reserves and regeneration of the subject.",
+    "enchantments": [ { "values": [ { "value": "MAX_MANA", "add": 20000 }, { "value": "REGEN_MANA", "multiply": 3 } ] } ]
+  }
+]

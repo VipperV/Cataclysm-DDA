@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <set>
 #include <string>
 #include <vector>
@@ -14,12 +15,44 @@
 #include "item_group.h"
 #include "itype.h"
 #include "iuse.h"
+#include "magic.h"
 #include "npc.h"
 #include "pocket_type.h"
 #include "player_helpers.h"
 #include "ret_val.h"
 #include "type_id.h"
 #include "units.h"
+#include "worldfactory.h"
+
+TEST_CASE( "exotic_magic_enhancement_requires_magiclysm", "[exotic_objects][mutations]" )
+{
+    if( !itype_id( "dimensional_storage_ring" ).is_valid() ) {
+        SUCCEED( "Run with --mods=exotic_objects to exercise mod data." );
+        return;
+    }
+    REQUIRE( world_generator != nullptr );
+    REQUIRE( world_generator->active_world != nullptr );
+    const std::vector<mod_id> &mods = world_generator->active_world->active_mod_order;
+    const bool magiclysm_loaded = std::find( mods.begin(), mods.end(),
+                                           mod_id( "magiclysm" ) ) != mods.end();
+    const trait_id enhancement( "PROTOTYPE_GENETIC_ENHANCEMENT_MAGIC" );
+    REQUIRE( enhancement.is_valid() == magiclysm_loaded );
+    if( !magiclysm_loaded ) {
+        return;
+    }
+
+    avatar patient;
+    clear_character( patient );
+    const int base_mana = patient.magic->max_mana( patient );
+    patient.toggle_trait( enhancement );
+    patient.recalculate_enchantment_cache();
+    const int enhanced_mana = patient.magic->max_mana( patient );
+    CHECK( enhanced_mana == base_mana + 20000 );
+    patient.magic->set_mana( 0 );
+    patient.magic->update_mana( patient, to_turns<float>( 1_hours ) );
+    // Normal regeneration fills the pool in 8 hours; multiply: 3 makes it 4x.
+    CHECK( patient.magic->available_mana() == enhanced_mana / 2 );
+}
 
 TEST_CASE( "portable_devices_reject_non_player_use", "[iuse][exotic_objects]" )
 {

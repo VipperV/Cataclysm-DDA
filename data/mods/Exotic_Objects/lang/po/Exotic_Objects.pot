@@ -59,3 +59,11 @@ msgstr ""
 #: data/mods/Exotic_Objects/mutations/mutations.json
 msgid "A prototype genetic enhancement that greatly increases the maximum health and regeneration of the subject."
 msgstr ""
+
+#: data/mods/Exotic_Objects/mod_interactions/magiclysm/mutations.json
+msgid "Enhanced Magic"
+msgstr ""
+
+#: data/mods/Exotic_Objects/mod_interactions/magiclysm/mutations.json
+msgid "A prototype genetic enhancement that greatly increases the mana reserves and regeneration of the subject."
+msgstr ""

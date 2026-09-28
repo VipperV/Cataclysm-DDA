@@ -54,3 +54,11 @@ msgid ""
 "A prototype genetic enhancement that greatly increases the maximum health "
 "and regeneration of the subject."
 msgstr "一种原型基因强化，可显著提高受试者的最大生命值和生命恢复速度。"
+
+#: data/mods/Exotic_Objects/mod_interactions/magiclysm/mutations.json
+msgid "Enhanced Magic"
+msgstr "强化魔力"
+
+#: data/mods/Exotic_Objects/mod_interactions/magiclysm/mutations.json
+msgid "A prototype genetic enhancement that greatly increases the mana reserves and regeneration of the subject."
+msgstr "一种原型基因强化，可显著提高受试者的魔力储备和恢复速度。"

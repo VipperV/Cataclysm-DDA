@@ -41,8 +41,16 @@
 增量验证：测试程序编译通过，`[exotic_objects]` 的 4 个测试、71368 项断言通过，
 包括生命上限 +300、耐力恢复 1.8 倍，以及疲劳增长和心肺恢复为未强化时的数值。
 
-## 动态制造目录
+## Magiclysm 按需整合
 
+Magiclysm 扩展的 `PROTOTYPE_GENETIC_ENHANCEMENT_MAGIC` 已整合到主模组的
+`mod_interactions/magiclysm/mutations.json`。仅当世界同时启用 `exotic_objects` 和
+`magiclysm` 时自动加载，无需子模组或 C++ 加载改动。保留原 ID、50 点、`valid: false`、
+魔力上限 +20000 和 `REGEN_MANA multiply: 3`（恢复速率为新上限对应基础速率的 4 倍）。
+获取方式与原扩展相同，仍通过调试菜单授予突变；不会自动赋予角色。
+旧世界迁入时保留上述两个模组，移除原 `exotic_objects_magiclysm` 扩展以免重复定义。
+
+## 动态制造目录
 
 高级模板使用 JSON 字段 `nanofab_template_all_items: true`。C++ 从调试物品菜单使用的
 `item_controller->all()` 注册表枚举物品，排除空物品；每次打开模板制造菜单时重新读取，
@@ -94,6 +102,7 @@
 cataclysm-tiles --userdir build/check-exotic --check-mods exotic_objects
 cata_test-tiles --user-dir build/test-exotic --mods exotic_objects --option_overrides WARN_ON_MODIFIED:false "[exotic_objects]"
 cata_test-tiles --user-dir build/test-exotic-afs --mods aftershock_exoplanet,exotic_objects --option_overrides WARN_ON_MODIFIED:false "[exotic_objects]"
+cata_test-tiles --user-dir build/test-exotic-magic --mods magiclysm,exotic_objects --option_overrides WARN_ON_MODIFIED:false "[exotic_objects]"
 ```
 
 动态目录验证结果（2026-09-28）：
