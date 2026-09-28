@@ -32,7 +32,7 @@ TEST_CASE( "portable_devices_reject_non_player_use", "[iuse][exotic_objects]" )
     CHECK_FALSE( iuse::portable_autodoc( &non_player, &device, pos ).has_value() );
 }
 
-TEST_CASE( "exotic_enhancement_preserves_healing_and_cardio", "[exotic_objects][mutations]" )
+TEST_CASE( "exotic_enhancement_matches_updated_mutation", "[exotic_objects][mutations]" )
 {
     const trait_id enhancement( "PROTOTYPE_GENETIC_ENHANCEMENT_HP" );
     if( !enhancement.is_valid() ) {
@@ -45,16 +45,25 @@ TEST_CASE( "exotic_enhancement_preserves_healing_and_cardio", "[exotic_objects][
     const float base_healing = patient.healing_rate( 1.0f );
     const int base_cardio = patient.get_cardiofit();
     const int base_hp = patient.get_part_hp_max( bodypart_id( "torso" ) );
+    const float base_sleepiness = patient.calc_needs_rates().sleepiness;
+    patient.set_stamina( 0 );
+    patient.update_stamina( 10 );
+    const int base_stamina_regen = patient.get_stamina();
     REQUIRE( base_healing > 0 );
+    REQUIRE( base_stamina_regen > 0 );
 
     patient.toggle_trait( enhancement );
     patient.recalculate_enchantment_cache();
     patient.recalc_hp();
 
-    CHECK( patient.get_part_hp_max( bodypart_id( "torso" ) ) == base_hp + 500 );
+    CHECK( patient.get_part_hp_max( bodypart_id( "torso" ) ) == base_hp + 300 );
     CHECK( patient.healing_rate( 1.0f ) == Approx( base_healing * 5 ) );
     CHECK( patient.healing_rate( 0.0f ) == Approx( base_healing * 20 ) );
-    CHECK( patient.get_cardiofit() == base_cardio * 2 );
+    CHECK( patient.get_cardiofit() == base_cardio );
+    CHECK( patient.calc_needs_rates().sleepiness == Approx( base_sleepiness ) );
+    patient.set_stamina( 0 );
+    patient.update_stamina( 10 );
+    CHECK( patient.get_stamina() == Approx( base_stamina_regen * 1.8 ).margin( 2 ) );
 }
 
 TEST_CASE( "exotic_storage_and_templates", "[exotic_objects]" )
