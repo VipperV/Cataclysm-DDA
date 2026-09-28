@@ -348,7 +348,7 @@ void main_menu::print_menu( const catacurses::window &w_open, int iSel, const po
 
     iLine++;
     center_print( w_open, iLine, c_light_blue,
-                  string_format( _( "Version: 0.I-1 (Ito-1) Stable Release" ),
+                  string_format( _( "Version: 0.I.D Stable Release" ),
                                  getVersionString() ) );
 
     int menu_length = 0;
