@@ -1441,6 +1441,10 @@ struct itype {
         // itemgroup used to generate the recipes within nanofabricator templates.
         item_group_id nanofab_template_group;
 
+        // Use the current world's loaded item types instead of a fixed recipe group.
+        bool nanofab_template_all_items = false;
+        std::vector<const itype *> nanofab_recipes() const;
+
         // Templates accepted by a portable nanofabricator.
         std::set<itype_id> allowed_pocketnanofab_template_id;
 

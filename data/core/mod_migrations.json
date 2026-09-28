@@ -1,6 +1,11 @@
 [
   {
     "type": "mod_migration",
+    "id": "exotic_objects_afs",
+    "removal_reason": "Exotic Objects now discovers all loaded items automatically.  Keep exotic_objects and your content mods enabled; the separate extension is no longer needed."
+  },
+  {
+    "type": "mod_migration",
     "//": "Removed in 0.I",
     "id": "Graphical_Overmap",
     "removal_reason": "Superseded by proper support for overmap tilesets through \"Use tiles to display overmap\" option under Graphics -> Tileset Options."

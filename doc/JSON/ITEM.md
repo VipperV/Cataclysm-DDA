@@ -150,6 +150,7 @@ These fields can be read by any ITEM regardless of subtypes:
 },
 "explode_in_fire": true,                     // Should the item explode if set on fire
 "nanofab_template_group": "nanofab_recipes", // This item is nanofabricator recipe, and point to itemgroup with items, that it could possibly contain; require nanofab_template_group
+"nanofab_template_all_items": false, // For NANOFAB_TEMPLATE items: use all non-null item types loaded in the current world instead of nanofab_template_group, both for initial recipes and portable template selection. Defaults to false; supports copy-from.
 "allowed_pocketnanofab_template_ids": [ "standard_template_construct" ], // Template item IDs accepted by the PORTABLE_NANOFABRICATOR use action. Inherited by copy-from; replace the array or use extend/delete to customize it.
 "template_requirements": "nanofabricator",   // `requirement`, that needed to craft any of this templates; used as "one full requirememt per 250 ml of item's volume" - item with volume 750 ml would require three times of `requirement`, item of 2L - eight times of `requirement`
 "explosion": {                               // Physical explosion data

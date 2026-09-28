@@ -12,8 +12,8 @@
 
 - `exotic_objects`：维度储物环、大容量且不增加负重的储物空间、便携纳米制造与修理、
   高级制造模板及模板复制、三种可部署机甲、强化生命值突变。
-- `exotic_objects_afs`：Aftershock: Exoplanet 制造清单扩展，依赖 `exotic_objects` 和
-  `aftershock_exoplanet`。0.I 已将旧 `aftershock` 标记为过时，本次以其当前后继模组为目标。
+- 高级模板在运行时枚举当前世界已加载的物品，自动包含基础游戏和已启用内容模组。
+  原 `exotic_objects_afs` 扩展已合入基础功能，无需另行启用。
 - 便携自动医疗机：CBM 安装与拆卸、骨折夹板、伤口治疗、辐射检测及治疗、血液分析。
 - 中文内容：保留官方 0.I 已有翻译，只向核心中文词典补充模组的缺失译文。
   模组原有的 PO/POT 源文件也保留。
@@ -31,25 +31,25 @@
 - 模板白名单沿用 JSON 字段 `allowed_pocketnanofab_template_ids`，支持 0.I 的继承机制，
   并在物品定义检查中验证引用。
 - 制造结果使用 0.I 的默认容器处理接口；制造菜单按当前物品分类分组并按本地化名称排序。
-- 0.I 会覆盖同名物品组。Aftershock 扩展使用 `copy-from` + `extend`，不会覆盖基础清单。
-- 基础清单按官方迁移记录处理了 404 个旧编号，并合并迁移到同一物品的重复项。
-  基础高级制造清单保留 8771 项，Aftershock: Exoplanet 另外补充 510 项。
-  清单保留旧模组原有范围，不自动纳入所有 0.I 新增物品。
 
-基础清单移除了以下 18 个不再作为有效基础物品存在、且没有可用官方替代关系的编号：
+## 动态制造目录
 
-```text
-gravelbag, earthbag, bp_40x46mm_buckshot_m118, 8mm_bootleg,
-artifact_teleportitis_aura, artifact_slow_aura,
-manual_centipede, manual_lizard, manual_scorpion, manual_toad, manual_venom_snake,
-necropolis_freq, egg_bird, deluxe_cheeseburger_wheat_free, ammo_box_army_20_308,
-fn1910, ruger_redhawk, minireactor
-```
+高级模板使用 JSON 字段 `nanofab_template_all_items: true`。C++ 从调试物品菜单使用的
+`item_controller->all()` 注册表枚举物品，排除空物品；每次打开模板制造菜单时重新读取，
+无需维护物品 ID 清单。物品按本地化名称排序，保留文字搜索和分类过滤。
+已启用的 Aftershock: Exoplanet 等模组自动加入目录，未启用模组不会凭空加入。
+范围按物品类型 ID 枚举；同一类型的外观变体仍使用原制造过程的变体选择规则。
 
-其中 `minireactor` 仍保留在 Aftershock 扩展。Exoplanet 中额外移除没有替代关系的
-`afs_synthetic_meat` 和 `afs_kelp`，其余改名按该模组自己的迁移表处理。
-部分旧编号已成为变体或物品组，不能继续
-作为独立制造物品引用；其当前基础物品在有效清单中仍然可用。
+随机生成高级模板时也使用该目录，直接记录目标 ID，不递归构造候选物品。
+普通模板默认仍使用原有的 `nanofab_template_group`，保留其随机权重与范围。
+自复制模板只保留一个用途明确的物品组，指向高级模板；它不是人工维护的制造目录。
+模板的材料消耗、数量限制、单次使用、修理和便携医疗功能保持不变。
+已有模板保存的 `NANOFAB_ITEM_ID` 继续按原规则读取并应用物品迁移。
+
+已删除 `Exotic_Objects_AFS` 目录及两份静态高级制造清单。
+旧世界若仍列有 `exotic_objects_afs`，游戏通过核心 `mod_migration` 给出合并原因并询问
+是否移除该失效扩展。确认移除后保留 `exotic_objects` 和所需内容模组即可；
+不自动添加或移除 Aftershock: Exoplanet 等内容模组。
 
 ## 修复旧实现的问题
 
@@ -77,27 +77,26 @@ fn1910, ruger_redhawk, minireactor
 目录，不改动官方构建脚本。
 
 回归测试位于 `tests/exotic_objects_test.cpp`，包括非玩家调用、储物重量/体积、模板配方引用
-和自复制模板。加载两个模组的检查和定向测试命令如下（可执行文件位置随构建方式变化）：
+和自复制模板，以及动态目录的完整性、当前世界模组物品、普通模板兼容性和随机模板生成。
+加载检查和定向测试命令如下（可执行文件位置随构建方式变化）：
 
 ```sh
 cataclysm-tiles --userdir build/check-exotic --check-mods exotic_objects
-cataclysm-tiles --userdir build/check-exotic-afs --check-mods exotic_objects_afs
 cata_test-tiles --user-dir build/test-exotic --mods exotic_objects --option_overrides WARN_ON_MODIFIED:false "[exotic_objects]"
-cata_test-tiles --user-dir build/test-exotic-afs --mods aftershock_exoplanet,exotic_objects,exotic_objects_afs --option_overrides WARN_ON_MODIFIED:false "[exotic_objects]"
+cata_test-tiles --user-dir build/test-exotic-afs --mods aftershock_exoplanet,exotic_objects --option_overrides WARN_ON_MODIFIED:false "[exotic_objects]"
 ```
 
-验证结果（2026-09-28）：
+动态目录验证结果（2026-09-28）：
 
-- MSVC/CMake Release 游戏可执行文件及测试程序：编译、链接成功。
+- MSVC/CMake Release 游戏和测试程序：编译、链接成功。
 - `--check-mods exotic_objects`：退出码 0，无数据加载错误。
-- `--check-mods exotic_objects_afs`：退出码 0，无数据加载错误。
-- 基础模组：3 个定向测试，17604 项断言通过。
-- 基础模组 + Aftershock: Exoplanet + 扩展：3 个定向测试，18644 项断言通过。
-- 测试验证了储物重量/体积、全部模板清单引用、模板复制、空角色/NPC 调用退出，
-  以及强化突变的生命值、睡眠/清醒恢复倍率和心肺倍率。
-- 两个模组所有 JSON 通过仓库自带格式器；`git diff --check` 通过。
-- 中文词典可编译，新增译文的格式占位符检查通过。完整上游中文词典原有的 37 项严格
-  `msgfmt --check-format` 诊断与未修改的 0.I 完全相同，没有改动这些无关译文。
+- 基础模组：4 个测试，71365 项断言通过。
+- 基础模组 + Aftershock: Exoplanet（无扩展）：4 个测试，76312 项断言通过。
+- 测试逐项构造动态目录物品并检查分类，验证空 ID 排除、无重复 ID、当前加载物品全覆盖、
+  Exoplanet 物品按启用状态出现、普通模板仍使用原物品组，以及 100 次随机高级模板生成。
+  原有储物、模板复制、设备调用和强化突变回归测试也通过。
+- 修改的 JSON 通过仓库格式器；`git diff --check` 通过。
+- 中文词典可编译，新增译文格式检查通过；完整上游词典原有的 37 项严格格式诊断保持不变。
 
 开发过程中变更 JSON 会触发缓存时间戳警告，测试目录关闭了 `WARN_ON_MODIFIED`；
 数据校验本身保持开启。测试命令需要显式列出依赖，游戏的 `--check-mods` 则自动加载依赖。

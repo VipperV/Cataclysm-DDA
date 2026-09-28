@@ -4159,6 +4159,7 @@ void itype::load( const JsonObject &jo, std::string_view src )
     optional( jo, was_loaded, "phase", phase, phase_id::SOLID );
 
     optional( jo, was_loaded, "nanofab_template_group", nanofab_template_group );
+    optional( jo, was_loaded, "nanofab_template_all_items", nanofab_template_all_items, false );
     optional( jo, was_loaded, "allowed_pocketnanofab_template_ids", allowed_pocketnanofab_template_id );
 
     optional( jo, was_loaded, "trait_group", trait_group );

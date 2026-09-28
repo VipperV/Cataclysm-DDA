@@ -9348,8 +9348,7 @@ std::optional<int> iuse::pocket_nanofab( Character *you, item *it, const tripoin
 
         if( !content_id.is_null() && allowed_template.count( content_id ) > 0 ) {
             std::vector<std::pair<itype_id, std::string>> options;
-            std::set<const itype *> template_recipes = item_group::every_possible_item_from( item::find_type(
-                        content_id )->nanofab_template_group );
+            const std::vector<const itype *> template_recipes = content_id->nanofab_recipes();
             for( const itype *recipe : template_recipes ) {
                 itype_id recipe_id = recipe->get_id();
                 if( !recipe_id.is_null() && recipe_id.is_valid() ) {

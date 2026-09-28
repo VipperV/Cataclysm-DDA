@@ -11,6 +11,8 @@
 #include "debug.h"
 #include "generic_factory.h"
 #include "item.h"
+#include "item_factory.h"
+#include "item_group.h"
 #include "make_static.h"
 #include "map.h"
 #include "material.h"
@@ -19,6 +21,22 @@
 #include "ret_val.h"
 #include "subbodypart.h"
 #include "translations.h"
+
+std::vector<const itype *> itype::nanofab_recipes() const
+{
+    if( nanofab_template_all_items ) {
+        std::vector<const itype *> recipes;
+        for( const itype *recipe : item_controller->all() ) {
+            if( !recipe->get_id().is_null() ) {
+                recipes.push_back( recipe );
+            }
+        }
+        return recipes;
+    }
+    const std::set<const itype *> recipes = item_group::every_possible_item_from(
+            nanofab_template_group );
+    return { recipes.begin(), recipes.end() };
+}
 
 std::string gunmod_location::name() const
 {

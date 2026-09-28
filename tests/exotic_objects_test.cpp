@@ -1,5 +1,6 @@
 #include <set>
 #include <string>
+#include <vector>
 
 #include "avatar.h"
 #include "bodypart.h"
@@ -8,6 +9,8 @@
 #include "coordinates.h"
 #include "flag.h"
 #include "item.h"
+#include "item_category.h"
+#include "item_factory.h"
 #include "item_group.h"
 #include "itype.h"
 #include "iuse.h"
@@ -80,8 +83,7 @@ TEST_CASE( "exotic_storage_and_templates", "[exotic_objects]" )
             INFO( id.str() );
             REQUIRE( id.is_valid() );
             REQUIRE( id->template_requirements.is_valid() );
-            const std::set<const itype *> recipes = item_group::every_possible_item_from(
-                    id->nanofab_template_group );
+            const std::vector<const itype *> recipes = id->nanofab_recipes();
             REQUIRE_FALSE( recipes.empty() );
             for( const itype *recipe : recipes ) {
                 INFO( recipe->get_id().str() );
@@ -96,5 +98,50 @@ TEST_CASE( "exotic_storage_and_templates", "[exotic_objects]" )
     SECTION( "self_replication_produces_an_advanced_template" ) {
         const item chip( itype_id( "advanced_template_construct_self" ), calendar::turn );
         CHECK( chip.get_var( "NANOFAB_ITEM_ID" ) == "advanced_template_construct" );
+    }
+}
+
+TEST_CASE( "advanced_nanofab_uses_the_loaded_world_catalog", "[exotic_objects]" )
+{
+    const itype_id advanced( "advanced_template_construct" );
+    if( !advanced.is_valid() ) {
+        SUCCEED( "Run with --mods=exotic_objects to exercise mod data." );
+        return;
+    }
+    REQUIRE( advanced->nanofab_template_all_items );
+    const std::vector<const itype *> recipes = advanced->nanofab_recipes();
+    std::set<itype_id> ids;
+    for( const itype *recipe : recipes ) {
+        INFO( recipe->get_id().str() );
+        REQUIRE_FALSE( recipe->get_id().is_null() );
+        REQUIRE( recipe->get_id().is_valid() );
+        CHECK( ids.insert( recipe->get_id() ).second );
+        // The selection UI constructs candidates to obtain their categories.
+        const item candidate( recipe, calendar::turn );
+        CHECK( candidate.get_category_shallow().get_id().is_valid() );
+    }
+    for( const itype *loaded : item_controller->all() ) {
+        if( !loaded->get_id().is_null() ) {
+            INFO( loaded->get_id().str() );
+            CHECK( ids.count( loaded->get_id() ) == 1 );
+        }
+    }
+    CHECK( ids.count( itype_id( "rock" ) ) == 1 );
+    CHECK( ids.count( itype_id( "dimensional_storage_ring" ) ) == 1 );
+    // Run with and without Exoplanet: no extension or recipe-list entry is needed.
+    const itype_id exoplanet_weapon( "afs_xm34" );
+    CHECK( ids.count( exoplanet_weapon ) == ( exoplanet_weapon.is_valid() ? 1 : 0 ) );
+
+    // Standard templates retain their original, restricted item-group recipes.
+    const itype_id standard( "standard_template_construct" );
+    CHECK_FALSE( standard->nanofab_template_all_items );
+    const std::vector<const itype *> standard_recipes = standard->nanofab_recipes();
+    const std::set<const itype *> standard_set( standard_recipes.begin(), standard_recipes.end() );
+    CHECK( standard_set == item_group::every_possible_item_from( standard->nanofab_template_group ) );
+
+    // Creating random templates must not recursively construct template candidates.
+    for( int i = 0; i < 100; ++i ) {
+        const item chip( advanced, calendar::turn );
+        CHECK( ids.count( itype_id( chip.get_var( "NANOFAB_ITEM_ID" ) ) ) == 1 );
     }
 }
